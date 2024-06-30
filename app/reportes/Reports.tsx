@@ -1,0 +1,197 @@
+'use client'
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
+import {  Box,
+          Paper,
+          Typography,
+          CircularProgress,
+          Avatar,
+          Card,
+          Grid,
+          CardActions,
+          CardContent,
+          IconButton,
+          Collapse,
+          Zoom,
+          Modal,
+          Divider,
+} from "@mui/material" 
+
+import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+
+import { blueDark, blueLight, blueLightHover, colorDrawer, colorTextBlack, darkBlueGrey, homeStyle, redWarn } from ".././Styles/general";
+import { colorText } from ".././Styles/general";
+
+import { setAvatarProps } from ".././hooks/setAvatarProps";
+import { getAllCotization, getCotizationsOverview, removeCotization } from ".././services/cotizationService";
+
+import {  StyledButton,
+          Search,
+          SearchIconWrapper,
+          StyledInputBase,
+} from ".././Styles/styledComponents/StyledComponents";
+import { cotizationGeneralData } from ".././entities/cotization";
+import Header from ".././components/Header";
+import { PDFViewer } from "@react-pdf/renderer";
+import GugaDocument from "../documentPdf/GugaDocument";
+import { useCotization } from "../hooks/useCotization";
+import { changeSection } from "../reducer/sliceSections";
+import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { setCurrentCotization } from "../reducer/sliceCurrentCotization";
+import DocumentViewer from "../documentPdf/DocumentViewer";
+import EnhancedFilter from "../components/EnhancedFilter";
+import { WarnMessage } from "../components/WarnMessage";
+import { GridActionsCellItem } from "@mui/x-data-grid";
+import { StyledTable } from "../components/Table";
+import { cotizationReportColumns } from "../catalogos/components/TableColumnConfiguration";
+import { getCotizationRows } from "../catalogos/components/TableRowConfiguration";
+import { grey } from "@mui/material/colors";
+import AllCotizations from "./components/AllCotizations";
+import OpenCotizations from "./components/OpenCotizations";
+import ClosedCotizations from "./components/ClosedCotizations";
+import CotizationsPerAgents from "./components/CotizationsPerAgents";
+import EnhancedCotizationsPerAgents from "./components/EnhancedCotizationPerAgent";
+
+const Reports = () =>{
+    const [warnMessageOpen, setWarnMessageOpen] = useState(false);
+  const [deleteInfo, setDeleteInfo] = useState("");
+  const [openViewPDF, setOpenViewPDF] = useState(false);
+  const [data, setData] = useState<cotizationGeneralData[]>();
+  const cotization = useCotization();
+
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state)=> state.sliceUserReducer.logIn);
+
+  const {data: sourceData, isSuccess, isFetching, refetch} = useQuery<cotizationGeneralData[]>({queryKey: ["getAllCotization"], queryFn: getAllCotization, refetchOnWindowFocus: false});
+  const handleRefresh = () => refetch();
+
+  useEffect(()=>{
+    if(isSuccess){}
+        setData(sourceData);
+  }, [isSuccess])
+
+  const handleDelete = async (identifier: string) => {
+        removeCotization(identifier).then(()=>{
+          refetch();
+        })  
+  }
+
+  const handleViewPdf = async (id: string ) => {
+    let cotizationData = sourceData.filter((element) => element.cotizationId === id)[0];
+    await cotization.setGeneralData(cotizationData);
+    setOpenViewPDF(true);
+  }
+
+  const handleCotizationDetail = (id: string ) => {
+    let cotizationData = sourceData.filter((element) => element.cotizationId === id)[0];
+    dispatch(setCurrentCotization(cotizationData))
+    dispatch(changeSection(2));
+  }
+
+  const handleDeleteMessage = (id: string ) => {
+    setDeleteInfo(id);
+    setWarnMessageOpen(true);
+  }
+
+  const handleTableCollumns = (columnDefinitions: any) => {
+    return [
+        {
+            field: "options",
+            type: "actions",
+            headerName: "Opciones",
+            width: 150,
+            cellClassName: "actions",
+            getActions: ({ id }) => {
+                return [
+                    <GridActionsCellItem
+                        key={1}
+                        icon={<DeleteIcon sx={{color: redWarn }}/>}
+                        label= {"Eliminar"}
+                        color="primary"
+                        onClick = {() => handleDeleteMessage(id)}
+                    />,
+                    <GridActionsCellItem
+                        key={2}
+                        icon={<PictureAsPdfIcon sx={{color: blueLight }}/>}
+                        label= {"Ver pdf"}
+                        color="primary"
+                        onClick = {() => handleViewPdf(id)}
+                    />,
+                    <GridActionsCellItem
+                        key={2}
+                        icon={<VisibilityIcon sx={{color: 'grey'}}/>}
+                        label= {"Ver"}
+                        color="primary"
+                        onClick = {() => handleCotizationDetail(id)}
+                    />,
+                ]
+            },
+
+        },
+        ...columnDefinitions
+    ]
+}
+  return (
+    <>
+      <DocumentViewer
+        open={openViewPDF}
+        onClose={setOpenViewPDF}
+        cotization={cotization}
+      />
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Header>Cotizaciones</Header>
+        </Grid>
+        <Grid item xs={12}>
+          <Box> 
+              <Typography sx={{ ml: 2.5, mt: 3}} fontSize={22} fontWeight={"bold"} color={colorDrawer}>
+                COTIZACIONES POR AGENTE COMERCIAL
+              </Typography>
+              <EnhancedCotizationsPerAgents/>
+          </Box>
+        </Grid>
+        <Grid item xs={12}>
+          <Box> 
+              <Typography sx={{ ml: 2.5, mt: 5, mb:3}} fontSize={22} fontWeight={"bold"} color={colorDrawer}>
+                TODAS LAS COTIZACIONES
+              </Typography>
+              <AllCotizations/>
+          </Box>
+        </Grid>
+        {/* <Grid item xs={12}>
+          <Box> 
+              <Typography sx={{ ml: 2.5, mt: 5, mb:3}} fontSize={22} fontWeight={"bold"} color={colorDrawer}>
+                COTIZACIONES CERRADAS
+              </Typography>
+              <ClosedCotizations/>
+          </Box>
+        </Grid>
+        <Grid item xs={12}>
+          <Box> 
+              <Typography sx={{ ml: 2.5, mt: 5, mb:3}} fontSize={22} fontWeight={"bold"} color={colorDrawer}>
+                COTIZACIONES ABIERTAS
+              </Typography>
+              <OpenCotizations/>
+          </Box>
+        </Grid> */}
+        {/* <Grid item xs={12}>
+          <Box> 
+              <Typography sx={{ ml: 2.5, mt: 3}} fontSize={22} fontWeight={"bold"} color={colorDrawer}>
+                COTIZACIONES POR AGENTE COMERCIAL
+              </Typography>
+              <CotizationsPerAgents/>
+              <Divider sx={{borderBottomWidth: 1.5, borderColor: blueLightHover, mt:1, ml:2.5, mr:2.5, mb:1 }}/>
+          </Box>
+        </Grid> */}
+      </Grid>
+    </>
+  )
+}
+
+export default Reports;
