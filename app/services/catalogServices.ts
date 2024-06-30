@@ -20,7 +20,7 @@ export const getClients = async () => {
 export const saveClients = async (data: clients) => {
     data.clientId = uuidV4();
     let client = data.companyName.trimEnd().trimStart();
-    let contact = data.contactName.trimEnd().trimStart();
+    let contact = !!data?.contactName? data.contactName.trimEnd().trimStart(): "";
     
     data.companyName = client;
     data.contactName = contact; 
