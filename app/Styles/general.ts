@@ -25,6 +25,9 @@ export const backgroundColorWhite = '#F2F2F2';
 export const backgroundLoggedColorBlue = '#032752';
 export const backgroundLoggedColorLightBlue = '#b4c8db';
 export const backgroundLoggedColorWhite = '#F2F2F2';
+export const successGreenButton = "#1982d1";
+export const successGreen = "#0a4673";
+
 export const gray = "#494947";
 export const sideBarStyle = (drawerWidth: number) => { return {
     display: { xs: 'none', sm: 'none', md: 'block' },
